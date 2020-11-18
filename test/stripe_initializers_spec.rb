@@ -12,9 +12,10 @@ describe "Configuring the stripe engine" do
   def rerun_initializers!; initializers.each{|init| init.run(app) }; end
 
   after do
-    Stripe.api_version = nil
-    Stripe.api_base    = 'https://api.stripe.com'
-    Stripe.api_key     = 'XYZ'
+    Stripe.api_version       = nil
+    Stripe.api_base          = 'https://api.stripe.com'
+    Stripe.api_key           = 'XYZ'
+    ENV['STRIPE_SECRET_KEY'] = 'XYZ'
   end
 
   describe 'Stripe configurations' do
@@ -40,7 +41,7 @@ describe "Configuring the stripe engine" do
       app.config.stripe.open_timeout      = 33
       app.config.stripe.read_timeout      = 88
       rerun_initializers!
-    end 
+    end
 
     it "reads values that is set in the environment" do
       subject
@@ -54,6 +55,16 @@ describe "Configuring the stripe engine" do
 
       _(app.config.stripe.signing_secret).must_equal 'SIGNING_SECRET_XYZ'
       _(app.config.stripe.signing_secrets.length).must_equal 1
+    end
+
+    it "supports nil signing_secret" do
+      subject
+
+      app.config.stripe.signing_secret    = nil
+      rerun_initializers!
+
+      _(app.config.stripe.signing_secret).must_equal nil
+      _(app.config.stripe.signing_secrets).must_equal nil
     end
 
     it "supports multiple signing secrets" do
@@ -88,6 +99,38 @@ describe "Configuring the stripe engine" do
 
     it 'should output a warning' do
       _(-> { subject }).must_output '', warning_msg
+    end
+  end
+
+  describe 'missing stripe.secret_key' do
+    subject do
+      ENV['STRIPE_SECRET_KEY'] = nil
+      Stripe.api_key = nil
+      app.config.stripe.secret_key = nil
+      rerun_initializers!
+    end
+    let(:warning_msg) { /No stripe.com API key was configured for environment test!/ }
+
+    it 'should output a warning' do
+      _(-> { subject }).must_output '', warning_msg
+    end
+  end
+
+  describe 'stripe.ignore_missing_secret_key' do
+    subject do
+      ENV['STRIPE_SECRET_KEY'] = nil
+      Stripe.api_key = nil
+      app.config.stripe.secret_key = nil
+      app.config.stripe.ignore_missing_secret_key = true
+      rerun_initializers!
+    end
+
+    after do
+      app.config.stripe.ignore_missing_secret_key = false
+    end
+
+    it 'should not output a warning' do
+      _(-> { subject }).must_output '', ''
     end
   end
 end

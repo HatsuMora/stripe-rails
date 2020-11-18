@@ -47,6 +47,7 @@ module Stripe
     callback 'invoice.created'
     callback 'invoice.finalized'
     callback 'invoice.marked_uncollectible'
+    callback 'invoice.paid'
     callback 'invoice.payment_action_required'
     callback 'invoice.payment_failed'
     callback 'invoice.payment_succeeded'
@@ -104,10 +105,6 @@ module Stripe
     callback 'transfer.updated'
     callback 'ping'
     callback 'stripe.event'
-
-    # Deprecated
-    callback 'transfer.failed' # https://stripe.com/docs/upgrades#2017-04-06
-    callback 'transfer.paid'   # https://stripe.com/docs/upgrades#2017-04-06
 
     class << self
       def run_callbacks(evt, target)
